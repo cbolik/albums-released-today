@@ -1,8 +1,5 @@
-# Song Search 
+# Template: Spotify Serverless
 
-A simple Web App for finding additional information for a given song title, artist, or album.
+A simple Web app using the [Spotify API](https://developer.spotify.com/documentation/web-api). Deploy e.g. through Github Pages.
 
-Has optional Spotify integration to obtain the currently playing track.
-New: Same now also for KEXP, Seattle's independent radio station.
-
-Check it out at https://cbolik.github.io/songsearch
+Important: Create a new app using the [Spotify for Developers Dashboard](https://developer.spotify.com/dashboard), and copy the btoa'ed CLIENT_ID into scripts.js.
