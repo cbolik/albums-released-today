@@ -1,7 +1,7 @@
 {
   "author": "cbolik",
-  "name": "template-spotify-serverless",
-  "description": "A template. Update to your needs.",
+  "name": "albums-released-today",
+  "description": "Displays a user's liked albums released today.",
   "version": "0.0.1",
   "scripts": {
     "start": "node app.js"

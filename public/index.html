@@ -14,7 +14,7 @@
   <meta property="og:title" content="ADD TITLE" />
   <meta property="og:url" content="https://cbolik.github.io/template-spotify-serverless" />
 
-  <title>Template: Spotify Serverless</title>
+  <title>Albums Released Today</title>
   <link rel="stylesheet" href="styles.css">
   <script src="scripts.js"></script>
   <script src="swipe.js"></script>
@@ -37,10 +37,13 @@
 </head>
 <body>
   <div class="banner" id="top">
-    <h1>Template</h1>
+    <h1>Albums Released Today</h1>
   </div>
   <p>
     <div id="current_title">...</div>
+  </p>
+  <p>
+    <div id="users_albums">Loading info about your saved albums...</div>
   </p>
 
   <script>
@@ -50,6 +53,7 @@
     document.addEventListener('touchend', function (e) { swipeEnd(e); }, false);
 
     spotifyCheckForCurrentTrack();
+    spotifyGetUsersSavedAlbums();
   </script>
 </body>
 </html>
