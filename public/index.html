@@ -14,45 +14,38 @@
   <meta property="og:title" content="ADD TITLE" />
   <meta property="og:url" content="https://cbolik.github.io/template-spotify-serverless" />
 
-  <title>Albums Released Today</title>
+  <title>Today's Albums</title>
   <link rel="stylesheet" href="styles.css">
   <script src="scripts.js"></script>
-  <script src="swipe.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" 
     integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" 
     crossorigin="anonymous" referrerpolicy="no-referrer" />
   <!-- third-generation iPad with high-resolution Retina display: -->
   <link rel="apple-touch-icon-precomposed" sizes="144x144"
-    href="icons/music-note-icon-144-155161.png">
+    href="icons/45-record-album-144-4835.png">
   <!-- iPhone with high-resolution Retina display: -->
   <link rel="apple-touch-icon-precomposed" sizes="114x114"
-    href="icons/music-note-icon-114-155161.png">
+    href="icons/45-record-album-114-4835.png">
   <!-- first- and second-generation iPad: -->
   <link rel="apple-touch-icon-precomposed" sizes="72x72"
-    href="icons/music-note-icon-72-155161.png">
+    href="icons/45-record-album-72-4835.png.png">
   <!-- non-Retina iPhone, iPod Touch, and Android 2.1+ devices: -->
-  <link rel="apple-touch-icon-precomposed" href="icons/music-note-icon-57-155161.png">
+  <link rel="apple-touch-icon-precomposed" href="icons/45-record-album-57-4835.png">
   <!-- basic favicon -->
-  <link rel="shortcut icon" href="icons/music-note-icon-32-155161.png">
+  <link rel="shortcut icon" href="icons/45-record-album-32-4835.png">
 </head>
 <body>
   <div class="banner" id="top">
-    <h1>Albums Released Today</h1>
+    <img src="icons/45-record-album-72-4835.png">
+    <h1>Today's Albums</h1>
   </div>
   <p>
-    <div id="current_title">...</div>
-  </p>
-  <p>
-    <div id="users_albums">Loading info about your saved albums...</div>
+    <div id="users_albums">Loading your saved albums...</div>
+    <ul id="albums_released_today"> 
+    </ul>
   </p>
 
   <script>
-    // pull down to refresh
-    document.addEventListener('touchstart', function (e) { swipeStart(e); }, false);
-    document.addEventListener('touchmove', function (e) { swipeMove(e); }, false);
-    document.addEventListener('touchend', function (e) { swipeEnd(e); }, false);
-
-    spotifyCheckForCurrentTrack();
     spotifyGetUsersSavedAlbums();
   </script>
 </body>

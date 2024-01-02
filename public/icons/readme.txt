@@ -1,4 +1,4 @@
-Thank you for downloading a favicon from Free Favicon! This favicon was created from an image at http://openclipart.org/ and converted to a favicon and other sizes for you to use in your projects. For more details about this image visit this page: http://openclipart.org/detail/155161/music-note-icon-by-jhnri4
+Thank you for downloading a favicon from Free Favicon! This favicon was created from an image at http://openclipart.org/ and converted to a favicon and other sizes for you to use in your projects. For more details about this image visit this page: http://openclipart.org/detail/4835/45-record-album-by-masonmouse
 
 For more infomation about how you can use this image from OpenClipArt see this page: http://openclipart.org/may-clipart-be-used-comparison
 
