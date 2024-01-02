@@ -16,6 +16,7 @@
   --album-color: #d6f8b8;
   --background-color: #4b5b6e;
   --button-color: rgb(190, 190, 190);
+  color: white;
 }
 
 body {
@@ -44,6 +45,13 @@ body {
   align-items: center;
   display: flex;
   position: relative;
+  font-size: 2em;
+}
+
+.banner img {
+  width: 2em;
+  height: auto;
+  margin-right: 0.5em;
 }
 
 .banner .buttons {
@@ -77,12 +85,21 @@ body {
   color: white;
 }
 
+ul img {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
 @media only screen and (max-width: 768px) {
   .banner {
     height: 40px;
   }
   .banner h1 {
     font-size: 32px;
+  }
+  .banner img {
+    width: 32px;
+    margin-right: 8px;
   }
 }
 
