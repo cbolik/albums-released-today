@@ -249,7 +249,17 @@ const populateTodaysAlbums = () => {
     let todaysAlbumsListElem = document.getElementById("albums_released_today");
     todaysAlbumsListElem.innerHTML = "";
     let newItem = document.createElement("li");
-    newItem.innerHTML = "None of your saved albumes were released on this day. But how about revisiting some of the following?";
+    // Get today's date in the form "December 5th"
+    let today = new Date();
+    let month = today.toLocaleString('default', { month: 'long' });
+    let day = today.getDate();
+    let suffix = "th";
+    if (day === 1 || day === 21 || day === 31) {
+      suffix = "st";
+    } else if (day === 2 || day === 22) {
+      suffix = "nd";
+    }
+    newItem.innerHTML = `None of your saved albums were released on ${month} ${day}${suffix}. But how about revisiting one of the following?`;
     todaysAlbumsListElem.appendChild(newItem);
 
     // pick 3 random albums from albumsList
