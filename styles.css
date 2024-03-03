@@ -85,6 +85,19 @@ body {
   color: white;
 }
 
+.icon {
+  vertical-align: middle;
+}
+
+.icon-link {
+  color: white; /* Set the color to white */
+  text-decoration: none; /* Remove underline */
+}
+
+.icon-link:hover {
+  cursor: pointer; /* Change cursor on hover to indicate clickable */
+}
+
 ul img {
   margin-top: 8px;
   margin-bottom: 8px;

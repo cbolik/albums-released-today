@@ -7,12 +7,13 @@
 
 // An Album object. Contains only the album attributes needed by this app.
 class Album {
-  constructor(releaseDate, name, artist, imageUrl, uri) {
+  constructor(releaseDate, name, artist, imageUrl, uri, href) {
     this.releaseDate = releaseDate;
     this.name = name;
     this.artist = artist;
     this.imageUrl = imageUrl;
     this.uri = uri;
+    this.href = href;
   }
 }
 
@@ -103,7 +104,7 @@ const spotifyGetUsersSavedAlbums = async () => {
     let albumsListStr = localStorage.getItem("albumsList");
     if (albumsListStr) {
       albumsList = JSON.parse(albumsListStr);
-      setInnerHTML("users_albums", `Found ${albumsList.length} saved albums.`);
+      setInnerHTML("users_albums", `Found ${albumsList.length} saved albums. <button onclick="reloadAlbums()">Reload</button>`);
     }
 
     populateTodaysAlbums();
@@ -119,7 +120,7 @@ const spotifyGetUsersSavedAlbums = async () => {
       url += "?market=from_token";
       url += "&offset=" + (offset || 0);
       url += "&limit=" + (limit || 20);
-      console.log(`Getting albums ${offset} to ${offset + limit - 1}`);
+      //console.log(`Getting albums ${offset} to ${offset + limit - 1}`);
 
       const response = await fetch(url, {
         headers: {
@@ -151,17 +152,23 @@ const spotifyGetUsersSavedAlbums = async () => {
       }
     }
 
-    for (let [key, value] of albumsByDate) {
-      console.log(key, value);
-    }
+    // for (let [key, value] of albumsByDate) {
+    //   console.log(key, value);
+    // }
     localStorage.setItem("albumsByDate", JSON.stringify(Array.from(albumsByDate.entries())));
     localStorage.setItem("albumsList", JSON.stringify(albumsList));
 
-    setInnerHTML("users_albums", `Found ${totalItems} saved albums.`);
+    setInnerHTML("users_albums", `Found ${totalItems} saved albums. <button onclick="reloadAlbums()">Reload</button>`);
     populateTodaysAlbums();
   } else {
     spotifyGetAccessToken();
   }
+}
+
+const reloadAlbums = () => {
+  localStorage.removeItem("albumsByDate");
+  localStorage.removeItem("albumsList");
+  location.reload();
 }
 
 const addAlbumToMap = (album) => {
@@ -170,12 +177,13 @@ const addAlbumToMap = (album) => {
   let name = album.album.name;
   let artist = album.album.artists[0].name;
   let uri = album.album.uri;
+  let href = album.album.external_urls.spotify;
 
   //console.log(`Album: ${name} by ${artist}, released: ${releaseDate}`)
 
   let dateElems = releaseDate.split("-");
   if (dateElems.length === 3) {
-    let newAlbum = new Album(releaseDate, name, artist, imageUrl, uri);
+    let newAlbum = new Album(releaseDate, name, artist, imageUrl, uri, href);
     let key = `-${dateElems[1]}-${dateElems[2]}`;
     if (key !== "-01-01") {
       let curVal = albumsByDate.has(key) ? albumsByDate.get(key) : new Array();
@@ -187,7 +195,7 @@ const addAlbumToMap = (album) => {
       })
       albumsByDate.set(key, curVal);
     } else {
-      console.log(`Not adding to map: Album ${name} by ${artist}, released: ${releaseDate}`);
+      //console.log(`Not adding to map: Album ${name} by ${artist}, released: ${releaseDate}`);
     }  
   }
 }
@@ -198,8 +206,9 @@ const addAlbumToList = (album) => {
   let name = album.album.name;
   let artist = album.album.artists[0].name;
   let uri = album.album.uri;
+  let href = album.album.external_urls.spotify;
 
-  let newAlbum = new Album(releaseDate, name, artist, imageUrl, uri);
+  let newAlbum = new Album(releaseDate, name, artist, imageUrl, uri, href);
   albumsList.push(newAlbum);
 }
 
@@ -234,7 +243,7 @@ const populateAlbumsFromSpotify = (albums_resp) => {
 
 const populateTodaysAlbums = () => {
   let todaysMonthDay = getTodaysMonthDay();
-  //let todaysMonthDay = "-10-02";
+  //let todaysMonthDay = "-03-02";
   let todaysYear = getTodaysYear();
   let todaysAlbumsList = albumsByDate.get(todaysMonthDay);
   if (todaysAlbumsList && todaysAlbumsList.length > 0) {
@@ -242,7 +251,13 @@ const populateTodaysAlbums = () => {
     todaysAlbumsListElem.innerHTML = "";
     for (let album of todaysAlbumsList) {
       let newItem = document.createElement("li");
-      newItem.innerHTML = `Released ${todaysYear - album.releaseDate.split("-")[0]} years ago today:<br><a href="${album.uri}"><img src="${album.imageUrl}"></a>`;
+      let releaseYear = album.releaseDate.split("-")[0];
+      let yearsAgo = todaysYear - releaseYear;
+      if (yearsAgo === 0) {
+        addAlbumHtml(album, newItem, `Released today <i class="fa-solid fa-fire icon"></i>:`);
+      } else {
+        addAlbumHtml(album, newItem, `Released ${yearsAgo} years ago today, in ${releaseYear}:`);
+      }
       todaysAlbumsListElem.appendChild(newItem);
     }
   } else {
@@ -258,6 +273,8 @@ const populateTodaysAlbums = () => {
       suffix = "st";
     } else if (day === 2 || day === 22) {
       suffix = "nd";
+    } else if (day === 3) {
+      suffix = "rd";
     }
     newItem.innerHTML = `None of your saved albums were released on ${month} ${day}${suffix}. But how about revisiting one of the following?`;
     todaysAlbumsListElem.appendChild(newItem);
@@ -285,12 +302,45 @@ const populateTodaysAlbums = () => {
 
     for (let idx of pickedAlbums) {
       let album = albumsList[idx];
+      let releaseYear = album.releaseDate.split("-")[0];
+      let yearsAgo = todaysYear - releaseYear;
       let newItem = document.createElement("li");
-      newItem.innerHTML = `Released on ${album.releaseDate}:<br><a href="${album.uri}"><img src="${album.imageUrl}"></a>`;
+      addAlbumHtml(album, newItem, `Released on ${album.releaseDate} (${yearsAgo} years ago):`);
       todaysAlbumsListElem.appendChild(newItem);
     }
   }
 }
+
+const addAlbumHtml = (album, elem, text) => {
+  // cut off " (..." from album name:
+  const albumName = album.name.replace(/ [\(\[].*$/, "");
+  let wikipediaUrl = `https://en.wikipedia.org/wiki/Special:Search?search=${albumName}%20${album.artist}`;
+  if (isMobileOrTablet()) {
+    albumLink = album.href;
+  } else {
+    albumLink = album.uri;
+  }
+  elem.innerHTML = text
+    + `<br><i>${album.artist}: ${albumName}</i> &nbsp; <a href="${wikipediaUrl}" ${!isMobileOrTablet() ? "target=_blank" : ""} class="icon-link"><i class="fa-brands fa-wikipedia-w icon"></i></a>`
+    + `<br><a href="${albumLink}"><img src="${album.imageUrl}"></a>`;
+  return elem;
+}
+
+const isMobileOrTablet = () => {
+  let check = false;
+  (function (a) {
+    if (
+      /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(
+        a
+      ) ||
+      /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(
+        a.substr(0, 4)
+      )
+    )
+      check = true;
+  })(navigator.userAgent || navigator.vendor || window.opera);
+  return check;
+};
 
 const getTodaysMonthDay = () => {
   // Get today's date
@@ -303,7 +353,7 @@ const getTodaysMonthDay = () => {
   // Format the suffix string as -MM-DD
   var formattedDate = '-' + month + '-' + day;
 
-  console.log("Today's date suffix: " + formattedDate);
+  //console.log("Today's date suffix: " + formattedDate);
   return formattedDate;
 }
 
