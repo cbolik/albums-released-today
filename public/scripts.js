@@ -114,8 +114,9 @@ const spotifyGetUsersSavedAlbums = async () => {
   if (access_token && state != null) {
 
     albumsByDate.clear();
+    let gotError = false;
     
-    while (offset < totalItems || totalItems === -1) {
+    while ((offset < totalItems || totalItems === -1) && !gotError) {
       let url = "https://api.spotify.com/v1/me/albums";
       url += "?market=from_token";
       url += "&offset=" + (offset || 0);
@@ -148,18 +149,21 @@ const spotifyGetUsersSavedAlbums = async () => {
 
         setInnerHTML("users_albums", `Loading your saved albums... ${Math.min(offset, totalItems)}/${totalItems}`);
       } else {
+        gotError = true;
         spotifyGetAccessToken();
       }
     }
 
-    // for (let [key, value] of albumsByDate) {
-    //   console.log(key, value);
-    // }
-    localStorage.setItem("albumsByDate", JSON.stringify(Array.from(albumsByDate.entries())));
-    localStorage.setItem("albumsList", JSON.stringify(albumsList));
+    if (!gotError) {
+      // for (let [key, value] of albumsByDate) {
+      //   console.log(key, value);
+      // }
+      localStorage.setItem("albumsByDate", JSON.stringify(Array.from(albumsByDate.entries())));
+      localStorage.setItem("albumsList", JSON.stringify(albumsList));
 
-    setInnerHTML("users_albums", `Found ${totalItems} saved albums. <button onclick="reloadAlbums()">Reload</button>`);
-    populateTodaysAlbums();
+      setInnerHTML("users_albums", `Found ${totalItems} saved albums. <button onclick="reloadAlbums()">Reload</button>`);
+      populateTodaysAlbums();
+    }
   } else {
     spotifyGetAccessToken();
   }
