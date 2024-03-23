@@ -320,7 +320,6 @@ const addAlbumHtml = (album, elem, text) => {
   const albumName = album.name.replace(/ [\(\[].*$/, "");
   let wikipediaUrl = `https://en.wikipedia.org/wiki/Special:Search?search=${albumName}%20${album.artist}`;
   let songSearchUrl = `https://songsearch.cbolik.net/?artist=${album.artist}&album=${albumName}`;
-  // <img src="icons/music-note-icon-16-155161.png" class="icon"></img>
   if (isMobileOrTablet()) {
     albumLink = album.href;
   } else {
