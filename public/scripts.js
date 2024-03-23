@@ -319,6 +319,8 @@ const addAlbumHtml = (album, elem, text) => {
   // cut off " (..." from album name:
   const albumName = album.name.replace(/ [\(\[].*$/, "");
   let wikipediaUrl = `https://en.wikipedia.org/wiki/Special:Search?search=${albumName}%20${album.artist}`;
+  let songSearchUrl = `https://songsearch.cbolik.net/?artist=${album.artist}&album=${albumName}`;
+  // <img src="icons/music-note-icon-16-155161.png" class="icon"></img>
   if (isMobileOrTablet()) {
     albumLink = album.href;
   } else {
@@ -326,6 +328,7 @@ const addAlbumHtml = (album, elem, text) => {
   }
   elem.innerHTML = text
     + `<br><i>${album.artist}: ${albumName}</i> &nbsp; <a href="${wikipediaUrl}" ${!isMobileOrTablet() ? "target=_blank" : ""} class="icon-link"><i class="fa-brands fa-wikipedia-w icon"></i></a>`
+    + `&nbsp; <a href="${songSearchUrl}" ${!isMobileOrTablet() ? "target=_blank" : ""} class="icon-link"><i class="fa-solid fa-s icon"></i></a>`
     + `<br><a href="${albumLink}"><img src="${album.imageUrl}"></a>`;
   return elem;
 }
