@@ -319,7 +319,7 @@ const addAlbumHtml = (album, elem, text) => {
   // cut off " (..." from album name:
   const albumName = album.name.replace(/ [\(\[].*$/, "");
   let wikipediaUrl = `https://en.wikipedia.org/wiki/Special:Search?search=${albumName}%20${album.artist}`;
-  let songSearchUrl = `https://songsearch.cbolik.net/?artist=${album.artist}&album=${albumName}`;
+  let songSearchUrl = `https://songsearch.cbolik.net/#album?artist=${album.artist}&album=${albumName}`;
   if (isMobileOrTablet()) {
     albumLink = album.href;
   } else {
