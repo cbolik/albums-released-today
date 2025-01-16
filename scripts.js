@@ -308,8 +308,18 @@ const populateTodaysAlbums = () => {
       let album = albumsList[idx];
       let releaseYear = album.releaseDate.split("-")[0];
       let yearsAgo = todaysYear - releaseYear;
+      let yearsAgoPart = "";
+      if (yearsAgo == 1) {
+        yearsAgoPart = " (1 year ago)";
+      } else {
+        yearsAgoPart = ` (${yearsAgo} years ago)`;
+      }
       let newItem = document.createElement("li");
-      addAlbumHtml(album, newItem, `Released on ${album.releaseDate} (${yearsAgo} years ago):`);
+      if (album.releaseDate.split("-").length > 1) {
+        addAlbumHtml(album, newItem, `Released on ${album.releaseDate}${yearsAgoPart}:`);
+      } else {
+        addAlbumHtml(album, newItem, `Released in ${releaseYear}${yearsAgoPart}:`);
+      }
       todaysAlbumsListElem.appendChild(newItem);
     }
   }
