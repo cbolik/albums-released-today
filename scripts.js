@@ -230,7 +230,14 @@ const populateAlbumsFromSpotify = (albums_resp) => {
         let albumYear = album.album.release_date.split("-")[0];
         //let albumDesc = album.album.name + ", released: " + ;
         let newItem = document.createElement("li");
-        newItem.innerHTML = `Released ${getTodaysYear() - albumYear} years ago today:<br><a href="${album.album.uri}"><img src="${album.album.images[1].url}"></a>`;
+        let yearsAgo = getTodaysYear() - albumYear;
+        let yearsAgoPart = "";
+        if (yearsAgo === 1) {
+          yearsAgoPart = " 1 year ago";
+        } else {
+          yearsAgoPart = ` ${yearsAgo} years ago`;
+        }
+        newItem.innerHTML = `Released${yearsAgoPart} today:<br><a href="${album.album.uri}"><img src="${album.album.images[1].url}"></a>`;
         todaysAlbumsList.appendChild(newItem);
         gotOne = true;
       }
@@ -260,7 +267,7 @@ const populateTodaysAlbums = () => {
       if (yearsAgo === 0) {
         addAlbumHtml(album, newItem, `Released today <i class="fa-solid fa-fire icon"></i>:`);
       } else {
-        addAlbumHtml(album, newItem, `Released ${yearsAgo} years ago today, in ${releaseYear}:`);
+        addAlbumHtml(album, newItem, `Released ${yearsAgo} year${yearsAgo === 1 ? "" : "s"} ago today, in ${releaseYear}:`);
       }
       todaysAlbumsListElem.appendChild(newItem);
     }
@@ -309,7 +316,7 @@ const populateTodaysAlbums = () => {
       let releaseYear = album.releaseDate.split("-")[0];
       let yearsAgo = todaysYear - releaseYear;
       let yearsAgoPart = "";
-      if (yearsAgo == 1) {
+      if (yearsAgo === 1) {
         yearsAgoPart = " (1 year ago)";
       } else {
         yearsAgoPart = ` (${yearsAgo} years ago)`;
