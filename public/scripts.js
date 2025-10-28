@@ -31,20 +31,57 @@ const setInnerHTML = (id, value) => {
 };
 
 /**
- * Obtains parameters from the hash part of the current URL (i.e. following "#").
- * Used for Spotify API's Implicit Grant flow. E.g. the access token is encoded here.
- * See https://developer.spotify.com/documentation/web-api/tutorials/implicit-flow
+ * Obtains parameters from the query string part of the current URL (i.e. following "?").
+ * Used for Spotify API's PKCE flow. E.g. the authorization code is encoded here.
+ * See https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow
  * @return Object
  */
-const getHashParams = () => {
-  let hashParams = {};
-  let e, r = /([^&;=]+)=?([^&;]*)/g,
-      q = window.location.hash.substring(1);
-  while ( e = r.exec(q)) {
-      hashParams[e[1]] = decodeURIComponent(e[2]);
-  }
-  return hashParams;
-}
+const getQueryParams = () => {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    code: params.get('code'),
+    state: params.get('state'),
+    error: params.get('error')
+  };
+};
+
+/**
+ * Base64URL encoding helper (no padding, URL-safe)
+ * Used for PKCE code verifier and challenge encoding
+ * @param {Uint8Array} buffer - The buffer to encode
+ * @return {string} Base64URL encoded string
+ */
+const base64URLEncode = (buffer) => {
+  const base64 = btoa(String.fromCharCode(...buffer));
+  return base64
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+};
+
+/**
+ * Generate code verifier (cryptographically random, 43-128 chars)
+ * Used for PKCE flow
+ * @return {string} Code verifier string
+ */
+const generateCodeVerifier = () => {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return base64URLEncode(array);
+};
+
+/**
+ * Generate code challenge from verifier (SHA-256 hash, base64url encoded)
+ * Used for PKCE flow
+ * @param {string} verifier - The code verifier
+ * @return {Promise<string>} Code challenge string
+ */
+const generateCodeChallenge = async (verifier) => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return base64URLEncode(new Uint8Array(hash));
+};
 
 /**
  * Generates a random string containing numbers and letters
@@ -67,21 +104,61 @@ const getRedirectURI = (loc) => {
   return uri.replace(/\/$/, "");
 }
 
+/**
+ * Exchange authorization code for access token using PKCE flow
+ * @param {string} code - Authorization code from Spotify
+ * @param {string} codeVerifier - Code verifier generated during authorization
+ * @return {Promise<Object>} Token data including access_token
+ */
+const exchangeCodeForToken = async (code, codeVerifier) => {
+  const response = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: code,
+      redirect_uri: SPOTIFY_REDIRECT_URI,
+      client_id: atob(SPOTIFY_CLIENT_ID),
+      code_verifier: codeVerifier
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Token exchange failed: ${response.status}`);
+  }
+
+  return await response.json();
+};
+
 // Update here, encode value copied from Spotify Dev via btoa() in browser console
 const SPOTIFY_CLIENT_ID = "MWIxZDQwYTYxM2U1NDdmMGE2ZjNiMGVjN2U2ZDExNDE=";
 const SPOTIFY_REDIRECT_URI = getRedirectURI(window.location);
 
-const spotifyGetAccessToken = () => {
-  // authorize user and get access token
-  let scope = "user-library-read";
-  let url = "https://accounts.spotify.com/authorize";
-  let state = generateRandomString(16);
+const spotifyGetAccessToken = async () => {
+  // authorize user and get access token using PKCE flow
+  const scope = "user-library-read";
+  const state = generateRandomString(16);
 
-  url += "?response_type=token";
+  // Generate PKCE parameters
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+  // Store state and verifier for callback validation
+  localStorage.setItem('spotify_auth_state', state);
+  localStorage.setItem('spotify_code_verifier', codeVerifier);
+
+  // Build authorization URL with PKCE parameters
+  let url = "https://accounts.spotify.com/authorize";
+  url += "?response_type=code";  // Changed from 'token' for PKCE
   url += "&client_id=" + encodeURIComponent(atob(SPOTIFY_CLIENT_ID));
   url += "&scope=" + encodeURIComponent(scope);
   url += "&redirect_uri=" + encodeURIComponent(SPOTIFY_REDIRECT_URI);
   url += "&state=" + encodeURIComponent(state);
+  url += "&code_challenge=" + encodeURIComponent(codeChallenge);
+  url += "&code_challenge_method=S256";
+
   window.location = url;
 }
 
@@ -91,11 +168,7 @@ const spotifyGetUsersSavedAlbums = async () => {
   let totalItems = -1;
   let allData = [];
 
-  let params = getHashParams();
-  let access_token = params.access_token,
-    state = params.state;
-
-  // read albumsByDate from local storage
+  // Check for cached data first
   let albumsByDateStr = localStorage.getItem("albumsByDate");
   if (albumsByDateStr) {
     let albumsByDateArr = JSON.parse(albumsByDateStr);
@@ -111,61 +184,116 @@ const spotifyGetUsersSavedAlbums = async () => {
     return;
   }
 
-  if (access_token && state != null) {
+  // Check for authorization code in URL (PKCE callback)
+  const params = getQueryParams();
+  const code = params.code;
+  const state = params.state;
+  const error = params.error;
+  const storedState = localStorage.getItem('spotify_auth_state');
+  const codeVerifier = localStorage.getItem('spotify_code_verifier');
 
-    albumsByDate.clear();
-    let gotError = false;
-    
-    while ((offset < totalItems || totalItems === -1) && !gotError) {
-      let url = "https://api.spotify.com/v1/me/albums";
-      url += "?market=from_token";
-      url += "&offset=" + (offset || 0);
-      url += "&limit=" + (limit || 20);
-      //console.log(`Getting albums ${offset} to ${offset + limit - 1}`);
+  // Handle authorization errors
+  if (error) {
+    console.error("Spotify authorization error:", error);
+    localStorage.removeItem('spotify_auth_state');
+    localStorage.removeItem('spotify_code_verifier');
+    setInnerHTML("users_albums", `Authorization error: ${error}`);
+    return;
+  }
 
-      const response = await fetch(url, {
-        headers: {
-          Authorization: "Bearer " + access_token,
-          Accept: "application/json"
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (!data) {
-          console.error("Failed to fetch data from get albums API.")
-          break;
-        }
+  let access_token = null;
 
-        if (totalItems === -1) {
-          totalItems = data.total;
-        }
-        allData = allData.concat(data.items);
-        offset += limit;
+  // Check for cached access token in sessionStorage first
+  const cachedToken = sessionStorage.getItem('spotify_access_token');
+  if (cachedToken) {
+    access_token = cachedToken;
+  }
 
-        for (let album of data.items) {
-          addAlbumToMap(album);
-          addAlbumToList(album);
-        }
+  // If we have a code, exchange it for a token
+  if (!access_token && code && state != null && state === storedState && codeVerifier) {
+    // Clean up stored values
+    localStorage.removeItem('spotify_auth_state');
+    localStorage.removeItem('spotify_code_verifier');
 
-        setInnerHTML("users_albums", `Loading your saved albums... ${Math.min(offset, totalItems)}/${totalItems}`);
-      } else {
-        gotError = true;
-        spotifyGetAccessToken();
-      }
+    try {
+      // Exchange authorization code for access token
+      const tokenData = await exchangeCodeForToken(code, codeVerifier);
+      access_token = tokenData.access_token;
+
+      // Store token in sessionStorage for reuse within this browser session
+      sessionStorage.setItem('spotify_access_token', access_token);
+
+      // Clean up URL by removing query parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+    } catch (err) {
+      console.error("Error during token exchange:", err);
+      setInnerHTML("users_albums", `Failed to exchange authorization code for token. Please try again.`);
+      return;
     }
+  }
 
-    if (!gotError) {
-      // for (let [key, value] of albumsByDate) {
-      //   console.log(key, value);
-      // }
-      localStorage.setItem("albumsByDate", JSON.stringify(Array.from(albumsByDate.entries())));
-      localStorage.setItem("albumsList", JSON.stringify(albumsList));
-
-      setInnerHTML("users_albums", `Found ${totalItems} saved albums. <button onclick="reloadAlbums()">Reload</button>`);
-      populateTodaysAlbums();
-    }
-  } else {
+  // If we don't have a token, redirect to authorization
+  if (!access_token) {
     spotifyGetAccessToken();
+    return;
+  }
+
+  // Fetch albums with the access token
+  albumsByDate.clear();
+  let gotError = false;
+
+  while ((offset < totalItems || totalItems === -1) && !gotError) {
+    let url = "https://api.spotify.com/v1/me/albums";
+    url += "?market=from_token";
+    url += "&offset=" + (offset || 0);
+    url += "&limit=" + (limit || 20);
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: "Bearer " + access_token,
+        Accept: "application/json"
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (!data) {
+        console.error("Failed to fetch data from get albums API.")
+        break;
+      }
+
+      if (totalItems === -1) {
+        totalItems = data.total;
+      }
+      allData = allData.concat(data.items);
+      offset += limit;
+
+      for (let album of data.items) {
+        addAlbumToMap(album);
+        addAlbumToList(album);
+      }
+
+      setInnerHTML("users_albums", `Loading your saved albums... ${Math.min(offset, totalItems)}/${totalItems}`);
+    } else if (response.status === 401) {
+      // Token expired or invalid - clear it and re-authenticate
+      gotError = true;
+      console.log("Access token expired or invalid, clearing cache and re-authenticating...");
+      sessionStorage.removeItem('spotify_access_token');
+      spotifyGetAccessToken();
+    } else {
+      gotError = true;
+      console.error("Failed to fetch albums:", response.status);
+      setInnerHTML("users_albums", `Failed to fetch albums. Please try again.`);
+    }
+  }
+
+  if (!gotError) {
+    localStorage.setItem("albumsByDate", JSON.stringify(Array.from(albumsByDate.entries())));
+    localStorage.setItem("albumsList", JSON.stringify(albumsList));
+
+    setInnerHTML("users_albums", `Found ${totalItems} saved albums. <button onclick="reloadAlbums()">Reload</button>`);
+    populateTodaysAlbums();
   }
 }
 
