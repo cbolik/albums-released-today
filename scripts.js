@@ -7,13 +7,14 @@
 
 // An Album object. Contains only the album attributes needed by this app.
 class Album {
-  constructor(releaseDate, name, artist, imageUrl, uri, href) {
+  constructor(releaseDate, name, artist, imageUrl, uri, href, addedDate) {
     this.releaseDate = releaseDate;
     this.name = name;
     this.artist = artist;
     this.imageUrl = imageUrl;
     this.uri = uri;
     this.href = href;
+    this.addedDate = addedDate;
   }
 }
 
@@ -310,12 +311,13 @@ const addAlbumToMap = (album) => {
   let artist = album.album.artists[0].name;
   let uri = album.album.uri;
   let href = album.album.external_urls.spotify;
+  let addedDate = album.added_at;
 
   //console.log(`Album: ${name} by ${artist}, released: ${releaseDate}`)
 
   let dateElems = releaseDate.split("-");
   if (dateElems.length === 3) {
-    let newAlbum = new Album(releaseDate, name, artist, imageUrl, uri, href);
+    let newAlbum = new Album(releaseDate, name, artist, imageUrl, uri, href, addedDate);
     let key = `-${dateElems[1]}-${dateElems[2]}`;
     if (key !== "-01-01") {
       let curVal = albumsByDate.has(key) ? albumsByDate.get(key) : new Array();
@@ -339,45 +341,10 @@ const addAlbumToList = (album) => {
   let artist = album.album.artists[0].name;
   let uri = album.album.uri;
   let href = album.album.external_urls.spotify;
+  let addedDate = album.added_at;
 
-  let newAlbum = new Album(releaseDate, name, artist, imageUrl, uri, href);
+  let newAlbum = new Album(releaseDate, name, artist, imageUrl, uri, href, addedDate);
   albumsList.push(newAlbum);
-}
-
-const populateAlbumsFromSpotify = (albums_resp) => {
-  let num_albums = 0;
-  if (albums_resp) {
-    num_albums = albums_resp.length;
-    
-    let todaysMonthDay = getTodaysMonthDay();
-    let todaysAlbumsList = document.getElementById("albums_released_today");
-    todaysAlbumsList.innerHTML = "";
-    let gotOne = false;
-    for (let album of albums_resp) {
-      if (album.album.release_date.endsWith(todaysMonthDay)) {
-        let albumYear = album.album.release_date.split("-")[0];
-        //let albumDesc = album.album.name + ", released: " + ;
-        let newItem = document.createElement("li");
-        let yearsAgo = getTodaysYear() - albumYear;
-        let yearsAgoPart = "";
-        if (yearsAgo === 1) {
-          yearsAgoPart = " 1 year ago";
-        } else {
-          yearsAgoPart = ` ${yearsAgo} years ago`;
-        }
-        newItem.innerHTML = `Released${yearsAgoPart} today:<br><a href="${album.album.uri}"><img src="${album.album.images[1].url}"></a>`;
-        todaysAlbumsList.appendChild(newItem);
-        gotOne = true;
-      }
-    }
-    if (!gotOne) {
-      let newItem = document.createElement("li");
-      newItem.textContent = "None";
-      todaysAlbumsList.appendChild(newItem);
-    }    
-  } else {
-    setInnerHTML("users_albums", `Albums go here. Huh, no saved albums found though.`)
-  }
 }
 
 const populateTodaysAlbums = () => {
@@ -471,9 +438,10 @@ const addAlbumHtml = (album, elem, text) => {
     albumLink = album.uri;
   }
   elem.innerHTML = text
-    + `<br><i>${album.artist}: ${albumName}</i> &nbsp; <a href="${wikipediaUrl}" ${!isMobileOrTablet() ? "target=_blank" : ""} class="icon-link"><i class="fa-brands fa-wikipedia-w icon"></i></a>`
-    + `&nbsp; <a href="${songSearchUrl}" ${!isMobileOrTablet() ? "target=_blank" : ""} class="icon-link"><i class="fa-solid fa-s icon"></i></a>`
-    + `<br><a href="${albumLink}"><img src="${album.imageUrl}"></a>`;
+    + `<br><div style="margin-top: 0.5em;"><i><b>${album.artist}: ${albumName}</i></b> &nbsp; <a href="${wikipediaUrl}" ${!isMobileOrTablet() ? "target=_blank" : ""} class="icon-link"><i class="fa-brands fa-wikipedia-w icon"></i></a>`
+    + `&nbsp; <a href="${songSearchUrl}" ${!isMobileOrTablet() ? "target=_blank" : ""} class="icon-link"><i class="fa-solid fa-s icon"></i></a></div>`
+    + `<div style="margin-top: 0.3em;"><span style="font-size: 0.8em;">(added ${album.addedDate.split("T")[0]})</span></div>`
+    + `<div style="margin-top: 0.5em;"><a href="${albumLink}"><img src="${album.imageUrl}"></a></div>`;
   return elem;
 }
 
