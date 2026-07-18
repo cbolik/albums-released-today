@@ -26,6 +26,18 @@ let albumsByDate = new Map();
 // An unsorted list of the user's Albums. Used for picking a number of random ones in case no album was released "today".
 let albumsList = new Array();
 
+// The date currently being viewed. Initialized to today on load; mutated by the date navigation buttons.
+// Never persisted (no URL / storage) — refreshing the page always returns to today.
+let selectedDate = new Date();
+
+const getSelectedMonthDay = () => {
+  const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+  const day = selectedDate.getDate().toString().padStart(2, '0');
+  return `-${month}-${day}`;
+};
+
+const getSelectedYear = () => selectedDate.getFullYear();
+
 // Convenience function for setting a given element's inner HTML
 const setInnerHTML = (id, value) => {
   return document.getElementById(id).innerHTML = value;
@@ -181,7 +193,7 @@ const spotifyGetUsersSavedAlbums = async () => {
       setInnerHTML("users_albums", `Found ${albumsList.length} saved albums. <button onclick="reloadAlbums()">Reload</button>`);
     }
 
-    populateTodaysAlbums();
+    populateAlbumsForSelectedDate();
     return;
   }
 
@@ -294,7 +306,7 @@ const spotifyGetUsersSavedAlbums = async () => {
     localStorage.setItem("albumsList", JSON.stringify(albumsList));
 
     setInnerHTML("users_albums", `Found ${totalItems} saved albums. <button onclick="reloadAlbums()">Reload</button>`);
-    populateTodaysAlbums();
+    populateAlbumsForSelectedDate();
   }
 }
 
@@ -347,10 +359,9 @@ const addAlbumToList = (album) => {
   albumsList.push(newAlbum);
 }
 
-const populateTodaysAlbums = () => {
-  let todaysMonthDay = getTodaysMonthDay();
-  //let todaysMonthDay = "-03-02";
-  let todaysYear = getTodaysYear();
+const populateAlbumsForSelectedDate = () => {
+  let todaysMonthDay = getSelectedMonthDay();
+  let todaysYear = getSelectedYear();
   let todaysAlbumsList = albumsByDate.get(todaysMonthDay);
   if (todaysAlbumsList && todaysAlbumsList.length > 0) {
     let todaysAlbumsListElem = document.getElementById("albums_released_today");
@@ -370,10 +381,9 @@ const populateTodaysAlbums = () => {
     let todaysAlbumsListElem = document.getElementById("albums_released_today");
     todaysAlbumsListElem.innerHTML = "";
     let newItem = document.createElement("li");
-    // Get today's date in the form "December 5th"
-    let today = new Date();
-    let month = today.toLocaleString('default', { month: 'long' });
-    let day = today.getDate();
+    // Get selected date in the form "December 5th"
+    let month = selectedDate.toLocaleString('default', { month: 'long' });
+    let day = selectedDate.getDate();
     let suffix = "th";
     if (day === 1 || day === 21 || day === 31) {
       suffix = "st";
@@ -404,7 +414,7 @@ const populateTodaysAlbums = () => {
       let yearB = albumsList[b].releaseDate.split("-")[0];
       return yearB - yearA;
     })
-       
+
 
     for (let idx of pickedAlbums) {
       let album = albumsList[idx];
