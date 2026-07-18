@@ -193,6 +193,8 @@ const spotifyGetUsersSavedAlbums = async () => {
       setInnerHTML("users_albums", `Found ${albumsList.length} saved albums. <button onclick="reloadAlbums()">Reload</button>`);
     }
 
+    renderDateNav();
+    initDateNav();
     populateAlbumsForSelectedDate();
     return;
   }
@@ -306,6 +308,8 @@ const spotifyGetUsersSavedAlbums = async () => {
     localStorage.setItem("albumsList", JSON.stringify(albumsList));
 
     setInnerHTML("users_albums", `Found ${totalItems} saved albums. <button onclick="reloadAlbums()">Reload</button>`);
+    renderDateNav();
+    initDateNav();
     populateAlbumsForSelectedDate();
   }
 }
@@ -359,6 +363,68 @@ const addAlbumToList = (album) => {
   albumsList.push(newAlbum);
 }
 
+const isSelectedDateToday = () => {
+  const today = new Date();
+  return selectedDate.getFullYear() === today.getFullYear()
+      && selectedDate.getMonth() === today.getMonth()
+      && selectedDate.getDate() === today.getDate();
+};
+
+const formatSelectedDateLabel = () => {
+  const opts = { weekday: 'short', month: 'short', day: 'numeric' };
+  if (selectedDate.getFullYear() !== new Date().getFullYear()) {
+    opts.year = 'numeric';
+  }
+  return selectedDate.toLocaleDateString('en-US', opts);
+};
+
+const formatSelectedMonthDayShort = () => {
+  return selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+const renderDateNav = () => {
+  const nav = document.getElementById("date_nav");
+  const label = document.getElementById("date_label");
+  const nextBtn = document.getElementById("date_next");
+  const todayBtn = document.getElementById("date_today");
+
+  label.textContent = formatSelectedDateLabel();
+
+  const onToday = isSelectedDateToday();
+  nextBtn.disabled = onToday;
+  todayBtn.hidden = onToday;
+
+  nav.hidden = false;
+};
+
+let dateNavInitialized = false;
+
+const initDateNav = () => {
+  if (dateNavInitialized) return;
+  dateNavInitialized = true;
+
+  document.getElementById("date_prev").addEventListener("click", () => {
+    selectedDate = new Date(selectedDate);
+    selectedDate.setDate(selectedDate.getDate() - 1);
+    renderDateNav();
+    populateAlbumsForSelectedDate();
+  });
+
+  document.getElementById("date_next").addEventListener("click", () => {
+    if (isSelectedDateToday()) return;
+    selectedDate = new Date(selectedDate);
+    selectedDate.setDate(selectedDate.getDate() + 1);
+    renderDateNav();
+    populateAlbumsForSelectedDate();
+  });
+
+  document.getElementById("date_today").addEventListener("click", () => {
+    selectedDate = new Date();
+    renderDateNav();
+    populateAlbumsForSelectedDate();
+  });
+};
+
 const populateAlbumsForSelectedDate = () => {
   let todaysMonthDay = getSelectedMonthDay();
   let todaysYear = getSelectedYear();
@@ -366,14 +432,25 @@ const populateAlbumsForSelectedDate = () => {
   if (todaysAlbumsList && todaysAlbumsList.length > 0) {
     let todaysAlbumsListElem = document.getElementById("albums_released_today");
     todaysAlbumsListElem.innerHTML = "";
+    const onToday = isSelectedDateToday();
+    const monthDayShort = formatSelectedMonthDayShort();
     for (let album of todaysAlbumsList) {
       let newItem = document.createElement("li");
       let releaseYear = album.releaseDate.split("-")[0];
       let yearsAgo = todaysYear - releaseYear;
-      if (yearsAgo === 0) {
-        addAlbumHtml(album, newItem, `Released today <i class="fa-solid fa-fire icon"></i>:`);
+      const yearsAgoText = `${yearsAgo} year${yearsAgo === 1 ? "" : "s"}`;
+      if (onToday) {
+        if (yearsAgo === 0) {
+          addAlbumHtml(album, newItem, `Released today <i class="fa-solid fa-fire icon"></i>:`);
+        } else {
+          addAlbumHtml(album, newItem, `Released ${yearsAgoText} ago today, in ${releaseYear}:`);
+        }
       } else {
-        addAlbumHtml(album, newItem, `Released ${yearsAgo} year${yearsAgo === 1 ? "" : "s"} ago today, in ${releaseYear}:`);
+        if (yearsAgo === 0) {
+          addAlbumHtml(album, newItem, `Released on ${monthDayShort}, ${releaseYear}:`);
+        } else {
+          addAlbumHtml(album, newItem, `Released ${yearsAgoText} ago on ${monthDayShort}, in ${releaseYear}:`);
+        }
       }
       todaysAlbumsListElem.appendChild(newItem);
     }
@@ -470,28 +547,3 @@ const isMobileOrTablet = () => {
   })(navigator.userAgent || navigator.vendor || window.opera);
   return check;
 };
-
-const getTodaysMonthDay = () => {
-  // Get today's date
-  var today = new Date();
-
-  // Extract month, and day
-  var month = (today.getMonth() + 1).toString().padStart(2, '0'); // Month is zero-based
-  var day = today.getDate().toString().padStart(2, '0');
-
-  // Format the suffix string as -MM-DD
-  var formattedDate = '-' + month + '-' + day;
-
-  //console.log("Today's date suffix: " + formattedDate);
-  return formattedDate;
-}
-
-const getTodaysYear = () => {
-  // Get today's date
-  var today = new Date();
-
-  // Extract month, and day
-  var year = today.getFullYear();
-
-  return year;
-}

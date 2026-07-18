@@ -41,7 +41,17 @@
   </div>
   <p>
     <div id="users_albums">Loading your saved albums...</div>
-    <ul id="albums_released_today"> 
+    <div id="date_nav" class="date-nav" hidden>
+      <button type="button" id="date_prev" class="date-nav-btn" aria-label="Previous day">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <span id="date_label" class="date-nav-label"></span>
+      <button type="button" id="date_next" class="date-nav-btn" aria-label="Next day">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+      <button type="button" id="date_today" class="date-nav-today" hidden>Today</button>
+    </div>
+    <ul id="albums_released_today">
     </ul>
   </p>
 
