@@ -371,6 +371,7 @@ const isSelectedDateToday = () => {
 };
 
 const formatSelectedDateLabel = () => {
+  if (isSelectedDateToday()) return 'Today';
   const opts = { weekday: 'short', month: 'short', day: 'numeric' };
   if (selectedDate.getFullYear() !== new Date().getFullYear()) {
     opts.year = 'numeric';
@@ -386,13 +387,9 @@ const renderDateNav = () => {
   const nav = document.getElementById("date_nav");
   const label = document.getElementById("date_label");
   const nextBtn = document.getElementById("date_next");
-  const todayBtn = document.getElementById("date_today");
 
   label.textContent = formatSelectedDateLabel();
-
-  const onToday = isSelectedDateToday();
-  nextBtn.disabled = onToday;
-  todayBtn.hidden = onToday;
+  nextBtn.disabled = isSelectedDateToday();
 
   nav.hidden = false;
 };
@@ -418,11 +415,6 @@ const initDateNav = () => {
     populateAlbumsForSelectedDate();
   });
 
-  document.getElementById("date_today").addEventListener("click", () => {
-    selectedDate = new Date();
-    renderDateNav();
-    populateAlbumsForSelectedDate();
-  });
 };
 
 const populateAlbumsForSelectedDate = () => {
